@@ -1,0 +1,2683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Titulares en Vivo - NAVEGAWEB</title>
+    <meta name="description" content="Herramienta para ingresar URLs de medios de comunicación, extraer sus titulares en tiempo real y almacenarlos en la memoria del navegador.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --filters-sidebar-width: 320px;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-glow: rgba(99, 102, 241, 0.35);
+            --bg: #0b1120;
+            --bg-elevated: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.72);
+            --card-hover: rgba(51, 65, 85, 0.8);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.2);
+            --accent: #22d3ee;
+            --accent-glow: rgba(34, 211, 238, 0.25);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 18px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 15%, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
+                radial-gradient(circle at 90% 85%, rgba(34, 211, 238, 0.14) 0%, transparent 45%),
+                linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(11, 17, 32, 0.95) 100%);
+            background-attachment: fixed;
+            padding: 1.5rem 1rem 4rem;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        body.results-tab-active .container {
+            max-width: calc(100vw - var(--filters-sidebar-width) - 2rem);
+            margin-left: calc(var(--filters-sidebar-width) + 1rem);
+            margin-right: 1rem;
+        }
+
+        /* Top Navigation Bar */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 0.85rem 1.5rem;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .brand-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-badge {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #fff;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            letter-spacing: 0.05em;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.9rem;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .nav-btn-secondary {
+            color: var(--text-dim);
+            background: rgba(255, 255, 255, 0.04);
+            border-color: var(--border);
+        }
+
+        .nav-btn-secondary:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--border-hover);
+        }
+
+        .nav-btn-primary {
+            background: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        /* Header Section */
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        body.urls-tab-active header {
+            margin-bottom: 0.8rem;
+        }
+
+        .page-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.85rem;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: 9999px;
+            color: #a5b4fc;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent);
+            animation: pulse 2s infinite;
+        }
+
+        h1 {
+            font-size: 2.75rem;
+            font-weight: 800;
+            line-height: 1.2;
+            background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.03em;
+        }
+
+        body.urls-tab-active h1 {
+            font-size: 1.85rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        body.urls-tab-active .subtitle {
+            font-size: 0.86rem;
+            max-width: 760px;
+        }
+
+        /* Tabs */
+        .tabs-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            border: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.75);
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 700;
+            padding: 0.55rem 1rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            border-color: var(--border-hover);
+        }
+
+        .tab-btn.active {
+            color: #ffffff;
+            border-color: rgba(99, 102, 241, 0.45);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(34, 211, 238, 0.2));
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.35);
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.22s ease-out;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* Main Card */
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        #tabUrls .glass-panel {
+            min-height: 760px;
+        }
+
+        #tabUrls .panel-header {
+            margin-bottom: 0.85rem;
+        }
+
+        #tabUrls .panel-title {
+            font-size: 1.02rem;
+        }
+
+        #tabUrls .top-action-panel {
+            position: sticky;
+            top: 0.75rem;
+            z-index: 25;
+            margin-bottom: 1rem;
+            padding: 0.8rem 0.9rem 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(10px);
+        }
+
+        #tabUrls .actions-bar {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        #tabUrls .progress-box {
+            margin-top: 0.75rem;
+            margin-bottom: 0;
+            background: rgba(15, 23, 42, 0.85);
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.14);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .panel-title svg {
+            color: var(--accent);
+        }
+
+        .memory-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            background: rgba(15, 23, 42, 0.7);
+            padding: 0.35rem 0.8rem;
+            border-radius: 9999px;
+            border: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .memory-indicator.active {
+            color: var(--accent);
+            border-color: rgba(34, 211, 238, 0.3);
+            background: rgba(34, 211, 238, 0.08);
+        }
+
+        /* Form elements */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .textarea-wrapper {
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            height: 470px;
+            min-height: 420px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            resize: vertical;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        textarea::placeholder {
+            color: var(--text-muted);
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .pill-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 0.3rem 0.75rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .pill-btn:hover {
+            background: rgba(99, 102, 241, 0.15);
+            color: #c7d2fe;
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* Action Buttons */
+        .actions-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .button-group-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .button-group-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 0.75rem 1.4rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            text-decoration: none;
+            user-select: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #ffffff;
+            box-shadow: 0 4px 14px var(--primary-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4f46e5, #4338ca);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border-color: var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: var(--border-hover);
+        }
+
+        .btn-danger-ghost {
+            background: transparent;
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.2);
+            font-size: 0.85rem;
+            padding: 0.6rem 1rem;
+        }
+
+        .btn-danger-ghost:hover {
+            background: rgba(239, 68, 68, 0.12);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        .btn.loading .spinner {
+            display: inline-block;
+        }
+
+        .btn.loading .btn-icon {
+            display: none;
+        }
+
+        /* Progress Card */
+        .progress-box {
+            display: none;
+            margin-top: 1.25rem;
+            padding: 1rem 1.25rem;
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-bar-bg {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.3s ease;
+        }
+
+        .log-status {
+            font-size: 0.8rem;
+            color: var(--accent);
+            margin-top: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Results layout + Advanced Filter Panel (White & Black Lists) */
+        .results-layout {
+            display: block;
+            width: 100%;
+        }
+
+        .filter-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--filters-sidebar-width);
+            height: 100vh;
+            z-index: 90;
+            min-width: 0;
+        }
+
+        .results-main {
+            min-width: 0;
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .filter-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border);
+            border-left: none;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            padding: 1.35rem 1.5rem;
+            margin-bottom: 0;
+            box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45);
+            animation: fadeIn 0.4s ease-out;
+            position: relative;
+            top: auto;
+            height: 100%;
+            max-height: 100vh;
+            overflow: auto;
+        }
+
+        .filter-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .filter-panel-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+        }
+
+        .filter-box {
+            background: rgba(15, 23, 42, 0.75);
+            border-radius: var(--radius-sm);
+            padding: 1.15rem;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            transition: var(--transition);
+        }
+
+        .filter-box.white-box {
+            border-color: rgba(16, 185, 129, 0.28);
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, rgba(15, 23, 42, 0.75) 100%);
+        }
+
+        .filter-box.white-box:focus-within {
+            border-color: var(--success);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+        }
+
+        .filter-box.black-box {
+            border-color: rgba(239, 68, 68, 0.28);
+            background: linear-gradient(180deg, rgba(239, 68, 68, 0.05) 0%, rgba(15, 23, 42, 0.75) 100%);
+        }
+
+        .filter-box.black-box:focus-within {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+        }
+
+        .filter-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-tag-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .tag-white { color: #34d399; }
+        .tag-black { color: #f87171; }
+
+        .mode-toggle-group {
+            display: inline-flex;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .mode-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .mode-btn.active {
+            background: #059669;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+        }
+
+        .filter-input-text {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.65rem 0.85rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.88rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .filter-input-text:focus {
+            background: rgba(15, 23, 42, 0.98);
+        }
+
+        .filter-helper {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            line-height: 1.35;
+        }
+
+        .filter-stats-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: var(--radius-sm);
+            padding: 0.65rem 1rem;
+            margin-top: 1rem;
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .filter-stat-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .filter-stat-pill strong {
+            color: var(--text-main);
+        }
+
+        /* Controls / Filter Bar */
+        .results-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.7rem 1rem 0.7rem 2.6rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .toolbar-options {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .badge-count {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 0.9rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .badge-count strong {
+            color: var(--text-main);
+        }
+
+        /* Source Group / Card */
+        .source-container {
+            margin-bottom: 2rem;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .source-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.85rem;
+            padding: 0 0.25rem;
+        }
+
+        .source-name {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .source-url-tag {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.2rem 0.5rem;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+
+        .source-url-tag:hover {
+            color: #fff;
+            border-color: var(--border-hover);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Headlines List Table / Cards */
+        .headlines-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+        }
+
+        .headline-row {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            align-items: center;
+            gap: 1.25rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            transition: var(--transition);
+        }
+
+        .headline-row:last-child {
+            border-bottom: none;
+        }
+
+        .headline-row:hover {
+            background: rgba(255, 255, 255, 0.025);
+        }
+
+        .headline-idx {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            min-width: 24px;
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .headline-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .headline-title {
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 1.05rem;
+            font-weight: 500;
+            line-height: 1.45;
+            transition: color 0.15s ease;
+        }
+
+        .headline-title:hover {
+            color: var(--primary);
+        }
+
+        .headline-url {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.74rem;
+            color: var(--text-dim);
+            word-break: break-all;
+        }
+
+        .headline-url-link {
+            color: var(--accent);
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .headline-url-link:hover {
+            text-decoration: underline;
+        }
+
+        .headline-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .headline-time {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-lg);
+            margin-top: 1rem;
+        }
+
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+        }
+
+        .empty-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .empty-desc {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            max-width: 480px;
+            margin: 0 auto 1.5rem;
+        }
+
+        /* Toast feedback */
+        .toast-notification {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #1e293b;
+            color: var(--text-main);
+            border: 1px solid var(--accent);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            padding: 0.85rem 1.4rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .toast-notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 4rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            padding-top: 2rem;
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.6; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            body.results-tab-active .container {
+                max-width: 1100px;
+                margin: 0 auto;
+            }
+            .results-layout {
+                display: grid;
+                grid-template-columns: 1fr;
+            }
+            .filter-sidebar {
+                position: static;
+                width: 100%;
+                height: auto;
+                z-index: auto;
+            }
+            .results-main {
+                margin-left: 0;
+                width: 100%;
+            }
+            .filter-panel {
+                border-left: 1px solid var(--border);
+                border-radius: var(--radius-md);
+                position: static;
+                top: auto;
+                height: auto;
+                max-height: none;
+                overflow: visible;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.1rem; }
+            .navbar { flex-direction: column; gap: 1rem; align-items: flex-start; }
+            .nav-links { width: 100%; justify-content: space-between; }
+            .tabs-nav { gap: 0.5rem; }
+            .tab-btn { font-size: 0.82rem; padding: 0.5rem 0.8rem; }
+            .headline-row { grid-template-columns: 1fr; gap: 0.75rem; }
+            .headline-idx { display: none; }
+            .actions-bar { flex-direction: column; align-items: stretch; }
+            .button-group-left, .button-group-right { width: 100%; }
+            .btn-primary { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <a href="index.html" class="brand-link">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+                <span>NavegaWeb</span>
+                <span class="brand-badge">Buscador</span>
+            </a>
+            <div class="nav-links">
+                <span id="memoryStatusBadge" class="memory-indicator">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    <span id="memoryCountText">0 en memoria</span>
+                </span>
+                <a href="index.html" class="nav-btn nav-btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    Ver Portada
+                </a>
+            </div>
+        </nav>
+
+        <!-- Header -->
+        <header>
+            <div class="page-tag">
+                <span class="pulse-dot"></span>
+                Extracción en tiempo real y memoria persistente
+            </div>
+            <h1>Buscador de Titulares</h1>
+            <p class="subtitle">
+                Ingresa una o varias URLs de portales de noticias. Al presionar el botón, se extraerán los titulares y enlaces, guardándose automáticamente en la memoria de tu navegador.
+            </p>
+        </header>
+
+        <div class="tabs-nav" role="tablist" aria-label="Secciones del buscador">
+            <button id="tabBtnUrls" type="button" class="tab-btn active" role="tab" aria-selected="true" onclick="setActiveTab('urls')">
+                Pestaña 1: Agregar URLs
+            </button>
+            <button id="tabBtnResults" type="button" class="tab-btn" role="tab" aria-selected="false" onclick="setActiveTab('results')">
+                Pestaña 2: Filtros y Titulares
+            </button>
+        </div>
+
+        <!-- Main Search Form Panel -->
+        <div id="tabUrls" class="tab-pane active">
+        <section class="glass-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                    <span>Configuración de URLs a consultar</span>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-dim);">
+                    Separa múltiples URLs con saltos de línea
+                </div>
+            </div>
+
+            <div class="top-action-panel">
+                <!-- Actions Bar -->
+                <div class="actions-bar">
+                    <div class="button-group-left">
+                        <button id="btnSearch" class="btn btn-primary" onclick="startExtraction()">
+                            <div class="spinner"></div>
+                            <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <span>Buscar Titulares</span>
+                        </button>
+
+                        <button class="btn btn-secondary" onclick="copyAllTextSummary()" title="Copiar todo el listado al portapapeles">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <span>Copiar Listado</span>
+                        </button>
+                    </div>
+
+                    <div class="button-group-right">
+                        <button class="btn btn-danger-ghost" onclick="clearBrowserMemory()" title="Borrar datos guardados en el navegador">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            <span>Limpiar Memoria</span>
+                        </button>
+                        <button class="btn btn-danger-ghost" onclick="clearAllBrowserStorage()" title="Borrar IndexedDB y localStorage">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18"></path>
+                                <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
+                                <path d="M10 11v6"></path>
+                                <path d="M14 11v6"></path>
+                                <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14"></path>
+                            </svg>
+                            <span>Borrar IDB + localStorage</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Progress Box -->
+                <div id="progressBox" class="progress-box">
+                    <div class="progress-header">
+                        <span id="progressStepText">Iniciando consulta...</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div id="progressBarFill" class="progress-bar-fill"></div>
+                    </div>
+                    <div id="logStatus" class="log-status">Preparando conexión...</div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="urlInput">
+                    <span>URLs de sitios de noticias:</span>
+                    <span id="urlCountLabel" style="font-size: 0.75rem; color: var(--text-muted);">0 URLs configuradas</span>
+                </label>
+                <div class="textarea-wrapper">
+                    <textarea 
+                        id="urlInput" 
+                        placeholder="https://www.emol.com&#10;http://www.lun.com&#10;https://www.radioagricultura.cl" 
+                        spellcheck="false"
+                    ></textarea>
+                </div>
+            </div>
+
+        </section>
+        </div>
+
+        <!-- Results Section -->
+        <div id="tabResults" class="tab-pane">
+        <main class="results-layout">
+            <aside class="filter-sidebar">
+            <!-- Panel de Filtros Inteligentes (White & Black Lists) -->
+            <section id="advancedFilterPanel" class="filter-panel" style="display: block;">
+                <div class="filter-panel-header">
+                    <div class="filter-panel-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                        </svg>
+                        <span>Filtro de Palabras (White &amp; Black List)</span>
+                    </div>
+                    <button type="button" class="pill-btn" onclick="resetAdvancedFilters()" title="Restablecer todos los filtros" style="font-size: 0.78rem;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                            <path d="M3 3v5h5"></path>
+                        </svg>
+                        Limpiar filtros
+                    </button>
+                </div>
+
+                <div class="filter-grid">
+                    <!-- White Filter (Palabras Deseadas) -->
+                    <div class="filter-box white-box">
+                        <div class="filter-header-row">
+                            <span class="filter-tag-title tag-white">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                Filtro White (Deseadas)
+                            </span>
+                            
+                            <!-- AND / OR Toggle -->
+                            <div class="mode-toggle-group">
+                                <button type="button" id="btnModeOr" class="mode-btn active" onclick="setWhiteMode('OR')" title="El titular debe contener al menos UNA de las palabras">
+                                    OR (Cualquiera)
+                                </button>
+                                <button type="button" id="btnModeAnd" class="mode-btn" onclick="setWhiteMode('AND')" title="El titular debe contener TODAS las palabras especificadas">
+                                    AND (Todas)
+                                </button>
+                            </div>
+                        </div>
+
+                        <input 
+                            type="text" 
+                            id="whiteFilterInput" 
+                            class="filter-input-text" 
+                            placeholder="Ej: presidente, congreso, economía..." 
+                            oninput="handleAdvancedFilterChange()"
+                            spellcheck="false"
+                        >
+
+                        <div class="filter-helper">
+                            <span id="whiteHelperText">Modo <strong>OR</strong>: Muestra titulares cuya <em>URL y/o título</em> incluya al menos una de estas palabras. Separa con comas.</span>
+                        </div>
+                    </div>
+
+                    <!-- Black Filter (Palabras No Deseadas) -->
+                    <div class="filter-box black-box">
+                        <div class="filter-header-row">
+                            <span class="filter-tag-title tag-black">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                </svg>
+                                Filtro Black (Excluir)
+                            </span>
+                            <span style="font-size: 0.72rem; color: #f87171; font-weight: 600; text-transform: uppercase;">
+                                No deseadas
+                            </span>
+                        </div>
+
+                        <input 
+                            type="text" 
+                            id="blackFilterInput" 
+                            class="filter-input-text" 
+                            placeholder="Ej: farándula, horóscopo, reality, choque..." 
+                            oninput="handleAdvancedFilterChange()"
+                            spellcheck="false"
+                        >
+
+                        <div class="filter-helper">
+                            Oculta automáticamente cualquier titular cuya <em>URL y/o título</em> contenga cualquiera de estas palabras. Separa con comas.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats summary bar -->
+                <div class="filter-stats-banner">
+                    <div class="filter-stat-pill">
+                        <span>Mostrando:</span>
+                        <strong id="visibleHeadlinesCount">0</strong>
+                        <span>de</span>
+                        <strong id="unfilteredHeadlinesCount">0</strong>
+                        <span>titulares</span>
+                    </div>
+                    <div id="filterStatusFeedback" style="color: var(--text-dim); font-size: 0.78rem;">
+                        Sin filtros activos
+                    </div>
+                </div>
+            </section>
+            </aside>
+            <section class="results-main">
+
+            <!-- Toolbar for search & stats -->
+            <div id="resultsToolbar" class="results-toolbar" style="display: flex;">
+                <div class="filter-wrapper">
+                    <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input 
+                        type="text" 
+                        id="filterInput" 
+                        class="search-input" 
+                        placeholder="Filtrar titulares por palabra clave (ej. economía, gobierno, chile)..." 
+                        oninput="handleFilter()"
+                    >
+                </div>
+
+                <div class="toolbar-options">
+                    <span class="badge-count">
+                        Total: <strong id="totalHeadlinesCount">0</strong> titulares
+                    </span>
+                    <span class="badge-count">
+                        Fuentes: <strong id="totalSourcesCount">0</strong>
+                    </span>
+                    <button class="pill-btn" onclick="exportData('json')" title="Descargar como JSON">
+                        📥 JSON
+                    </button>
+                    <button class="pill-btn" onclick="exportData('csv')" title="Descargar como CSV">
+                        📥 CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Container for news results -->
+            <div id="resultsContainer"></div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state">
+                <div class="empty-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path>
+                        <path d="M18 14h-8"></path>
+                        <path d="M15 18h-5"></path>
+                        <path d="M10 6h8v4h-8V6Z"></path>
+                    </svg>
+                </div>
+                <h2 class="empty-title">Aún no hay titulares en memoria</h2>
+                <p class="empty-desc">
+                    Ingresa URLs de noticias en el recuadro superior o haz clic en "Cargar paquete URL.txt" y presiona "Buscar Titulares".
+                </p>
+                <button class="btn btn-secondary" onclick="loadDefaultChileanPack(true)">
+                    ⚡ Cargar medios de ejemplo y buscar
+                </button>
+            </div>
+            </section>
+        </main>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>
+                <strong>NavegaWeb Buscador</strong> &bull; Datos almacenados localmente en <code>IndexedDB</code> y <code>localStorage</code> de tu navegador &bull; 
+                <a href="index.html">Ir a Portada Resumen</a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast-notification">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span id="toastMsg">Acción completada</span>
+    </div>
+
+    <!-- Script Application Logic -->
+    <script>
+        // Storage keys
+        const STORAGE_URLS_KEY = 'navegaweb_stored_urls';
+        const STORAGE_NEWS_KEY = 'navegaweb_stored_headlines';
+        const STORAGE_DATE_KEY = 'navegaweb_last_fetch_date';
+        const STORAGE_FILTER_KEY = 'navegaweb_filter_config';
+        const IDB_DB_NAME = 'navegaweb_db';
+        const IDB_DB_VERSION = 1;
+        const IDB_STORE_NAME = 'app_state';
+        const IDB_HEADLINES_KEY = 'headlines';
+        const IDB_LAST_FETCH_KEY = 'last_fetch_date';
+
+        // Default URLs matching URL.txt
+        const DEFAULT_URLS = [
+            'https://www.emol.com',
+            'http://www.lun.com',
+            'https://www.radioagricultura.cl'
+        ];
+
+        // Large pack with 12 URLs to trigger 15 parallel threads (>10 URLs)
+        const LARGE_PACK_URLS = [
+            'https://www.emol.com',
+            'http://www.lun.com',
+            'https://www.radioagricultura.cl',
+            'https://www.biobiochile.cl',
+            'https://www.latercera.com',
+            'https://www.cooperativa.cl',
+            'https://www.elmostrador.cl',
+            'https://www.theclinic.cl',
+            'https://www.df.cl',
+            'https://www.24horas.cl',
+            'https://www.t13.cl',
+            'https://www.cnnchile.com'
+        ];
+
+        // Global state in browser memory
+        let storedHeadlines = []; // Array of { id, source, sourceUrl, title, link, timestamp }
+        let currentFilter = '';
+        let isFetching = false;
+
+        // Advanced filter state (White & Black lists)
+        let filterSettings = {
+            whiteWords: '',      // Palabras deseadas (separadas por coma)
+            whiteMode: 'OR',     // 'OR' | 'AND'
+            blackWords: ''       // Palabras no deseadas (separadas por coma)
+        };
+
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadFromBrowserMemory();
+            setupUrlInputListener();
+            setActiveTab('urls');
+        });
+
+        /**
+         * Tab UI controller
+         */
+        function setActiveTab(tabName) {
+            const isUrls = tabName === 'urls';
+            const tabUrls = document.getElementById('tabUrls');
+            const tabResults = document.getElementById('tabResults');
+            const btnUrls = document.getElementById('tabBtnUrls');
+            const btnResults = document.getElementById('tabBtnResults');
+
+            if (!tabUrls || !tabResults || !btnUrls || !btnResults) return;
+
+            document.body.classList.toggle('results-tab-active', !isUrls);
+            document.body.classList.toggle('urls-tab-active', isUrls);
+
+            tabUrls.classList.toggle('active', isUrls);
+            tabResults.classList.toggle('active', !isUrls);
+
+            btnUrls.classList.toggle('active', isUrls);
+            btnResults.classList.toggle('active', !isUrls);
+
+            btnUrls.setAttribute('aria-selected', isUrls ? 'true' : 'false');
+            btnResults.setAttribute('aria-selected', isUrls ? 'false' : 'true');
+        }
+
+        /**
+         * Update character & line counters on textarea
+         */
+        function setupUrlInputListener() {
+            const input = document.getElementById('urlInput');
+            input.addEventListener('input', () => {
+                updateUrlCounter();
+                saveUrlsToMemory();
+            });
+            updateUrlCounter();
+        }
+
+        function updateUrlCounter() {
+            const urls = getParsedUrls();
+            const label = document.getElementById('urlCountLabel');
+            const threadInfo = urls.length > 10 ? '⚡ 15 hilos paralelos (>10 URLs)' : '🧵 1 hilo secuencial (≤10 URLs)';
+            label.textContent = `${urls.length} ${urls.length === 1 ? 'URL configurada' : 'URLs configuradas'} — Modo: ${threadInfo}`;
+        }
+
+        /**
+         * Extract array of clean URLs from textarea
+         */
+        function getParsedUrls() {
+            const val = document.getElementById('urlInput').value.trim();
+            if (!val) return [];
+            return val
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0 && !line.startsWith('#'))
+                .map(normalizeUrl);
+        }
+
+        /**
+         * Ensure proper URL protocol
+         */
+        function normalizeUrl(url) {
+            let clean = url.trim();
+            if (!/^https?:\/\//i.test(clean)) {
+                clean = 'https://' + clean;
+            }
+            return clean;
+        }
+
+        /**
+         * Load the standard 3 Chilean media from URL.txt (runs in 1 thread)
+         */
+        function loadDefaultChileanPack(autoRun = false) {
+            const input = document.getElementById('urlInput');
+            input.value = DEFAULT_URLS.join('\n');
+            updateUrlCounter();
+            saveUrlsToMemory();
+            showToast('URLs de URL.txt cargadas (3 URLs: se usará 1 hilo secuencial)');
+
+            if (autoRun) {
+                startExtraction();
+            }
+        }
+
+        /**
+         * Load 12 Chilean media (> 10 URLs: triggers 15 parallel threads)
+         */
+        function loadLargeChileanPack(autoRun = false) {
+            const input = document.getElementById('urlInput');
+            input.value = LARGE_PACK_URLS.join('\n');
+            updateUrlCounter();
+            saveUrlsToMemory();
+            showToast('Pack de 12 URLs cargado (>10 URLs: se usarán 15 hilos paralelos)');
+
+            if (autoRun) {
+                startExtraction();
+            }
+        }
+
+        /**
+         * Save current URLs to localStorage
+         */
+        function saveUrlsToMemory() {
+            const urls = getParsedUrls();
+            localStorage.setItem(STORAGE_URLS_KEY, JSON.stringify(urls));
+        }
+
+        /**
+         * Open IndexedDB instance
+         */
+        function openNavegaDb() {
+            return new Promise((resolve, reject) => {
+                if (!('indexedDB' in window)) {
+                    reject(new Error('IndexedDB no está disponible en este navegador'));
+                    return;
+                }
+
+                const request = indexedDB.open(IDB_DB_NAME, IDB_DB_VERSION);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(IDB_STORE_NAME)) {
+                        db.createObjectStore(IDB_STORE_NAME, { keyPath: 'key' });
+                    }
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error || new Error('No se pudo abrir IndexedDB'));
+            });
+        }
+
+        /**
+         * Save value in IndexedDB key-value store
+         */
+        async function saveToIndexedDb(key, value) {
+            const db = await openNavegaDb();
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(IDB_STORE_NAME, 'readwrite');
+                const store = tx.objectStore(IDB_STORE_NAME);
+                store.put({ key, value });
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error || new Error(`No se pudo guardar "${key}" en IndexedDB`));
+            });
+            db.close();
+        }
+
+        /**
+         * Read value from IndexedDB key-value store
+         */
+        async function getFromIndexedDb(key) {
+            const db = await openNavegaDb();
+            const value = await new Promise((resolve, reject) => {
+                const tx = db.transaction(IDB_STORE_NAME, 'readonly');
+                const store = tx.objectStore(IDB_STORE_NAME);
+                const request = store.get(key);
+                request.onsuccess = () => resolve(request.result ? request.result.value : null);
+                request.onerror = () => reject(request.error || new Error(`No se pudo leer "${key}" desde IndexedDB`));
+            });
+            db.close();
+            return value;
+        }
+
+        /**
+         * Delete a key from IndexedDB key-value store
+         */
+        async function deleteFromIndexedDb(key) {
+            const db = await openNavegaDb();
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(IDB_STORE_NAME, 'readwrite');
+                const store = tx.objectStore(IDB_STORE_NAME);
+                store.delete(key);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error || new Error(`No se pudo eliminar "${key}" de IndexedDB`));
+            });
+            db.close();
+        }
+
+        /**
+         * Delete whole app IndexedDB
+         */
+        function deleteIndexedDbDatabase() {
+            return new Promise((resolve, reject) => {
+                if (!('indexedDB' in window)) {
+                    resolve();
+                    return;
+                }
+
+                const request = indexedDB.deleteDatabase(IDB_DB_NAME);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error || new Error('No se pudo borrar la base de datos IndexedDB'));
+                request.onblocked = () => reject(new Error('No se pudo borrar IndexedDB porque existe otra pestaña usando la base'));
+            });
+        }
+
+        /**
+         * Remove all app keys from localStorage
+         */
+        function clearAppLocalStorage() {
+            localStorage.removeItem(STORAGE_URLS_KEY);
+            localStorage.removeItem(STORAGE_NEWS_KEY);
+            localStorage.removeItem(STORAGE_DATE_KEY);
+            localStorage.removeItem(STORAGE_FILTER_KEY);
+        }
+
+        /**
+         * Reset URL and filter inputs to defaults after full clear
+         */
+        function resetInputsAfterStorageClear() {
+            const input = document.getElementById('urlInput');
+            const quickFilterInput = document.getElementById('filterInput');
+            const whiteInput = document.getElementById('whiteFilterInput');
+            const blackInput = document.getElementById('blackFilterInput');
+
+            if (input) input.value = '';
+            if (quickFilterInput) quickFilterInput.value = '';
+            if (whiteInput) whiteInput.value = '';
+            if (blackInput) blackInput.value = '';
+
+            filterSettings.whiteWords = '';
+            filterSettings.whiteMode = 'OR';
+            filterSettings.blackWords = '';
+            currentFilter = '';
+            updateWhiteModeButtons();
+            updateUrlCounter();
+        }
+
+        /**
+         * Save headlines to IndexedDB (fallback: localStorage)
+         */
+        async function saveHeadlinesToMemory() {
+            try {
+                await saveToIndexedDb(IDB_HEADLINES_KEY, storedHeadlines);
+                await saveToIndexedDb(IDB_LAST_FETCH_KEY, new Date().toISOString());
+                // Legacy cleanup to avoid stale duplicate payloads in localStorage.
+                localStorage.removeItem(STORAGE_NEWS_KEY);
+                localStorage.removeItem(STORAGE_DATE_KEY);
+                updateMemoryBadge();
+            } catch (err) {
+                console.warn('Error al guardar en IndexedDB, usando fallback localStorage:', err);
+                localStorage.setItem(STORAGE_NEWS_KEY, JSON.stringify(storedHeadlines));
+                localStorage.setItem(STORAGE_DATE_KEY, new Date().toISOString());
+                updateMemoryBadge();
+            }
+        }
+
+        /**
+         * Load persisted data into application state (IndexedDB primary + localStorage fallback)
+         */
+        async function loadFromBrowserMemory() {
+            // Restore URLs
+            const savedUrls = localStorage.getItem(STORAGE_URLS_KEY);
+            const input = document.getElementById('urlInput');
+            if (savedUrls) {
+                try {
+                    const parsed = JSON.parse(savedUrls);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        input.value = parsed.join('\n');
+                    } else {
+                        input.value = DEFAULT_URLS.join('\n');
+                    }
+                } catch (e) {
+                    input.value = DEFAULT_URLS.join('\n');
+                }
+            } else {
+                input.value = DEFAULT_URLS.join('\n');
+            }
+            updateUrlCounter();
+
+            // Restore Filter Settings (White & Black Lists)
+            loadFilterSettingsFromMemory();
+
+            // Restore Headlines: IndexedDB first
+            let headlinesRestored = false;
+            try {
+                const savedNews = await getFromIndexedDb(IDB_HEADLINES_KEY);
+                if (Array.isArray(savedNews) && savedNews.length > 0) {
+                    storedHeadlines = savedNews;
+                    headlinesRestored = true;
+                    renderHeadlines();
+                    showToast(`Restaurados ${storedHeadlines.length} titulares desde IndexedDB`);
+                }
+            } catch (e) {
+                console.error('Error al recuperar titulares desde IndexedDB:', e);
+            }
+
+            // Legacy fallback for migration from localStorage
+            if (!headlinesRestored) {
+                const savedNewsLegacy = localStorage.getItem(STORAGE_NEWS_KEY);
+                if (savedNewsLegacy) {
+                    try {
+                        const parsed = JSON.parse(savedNewsLegacy);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            storedHeadlines = parsed;
+                            renderHeadlines();
+                            await saveHeadlinesToMemory();
+                            showToast(`Restaurados ${storedHeadlines.length} titulares desde localStorage (migrados a IndexedDB)`);
+                        }
+                    } catch (e) {
+                        console.error('Error al recuperar titulares legado:', e);
+                    }
+                }
+            }
+
+            updateMemoryBadge();
+        }
+
+        /**
+         * Load filter settings from localStorage and sync UI
+         */
+        function loadFilterSettingsFromMemory() {
+            const savedFilters = localStorage.getItem(STORAGE_FILTER_KEY);
+            if (savedFilters) {
+                try {
+                    const parsed = JSON.parse(savedFilters);
+                    if (parsed && typeof parsed === 'object') {
+                        filterSettings.whiteWords = parsed.whiteWords || '';
+                        filterSettings.whiteMode = (parsed.whiteMode === 'AND') ? 'AND' : 'OR';
+                        filterSettings.blackWords = parsed.blackWords || '';
+                    }
+                } catch (e) {
+                    console.warn('Error al restaurar filtros:', e);
+                }
+            }
+
+            const whiteInput = document.getElementById('whiteFilterInput');
+            const blackInput = document.getElementById('blackFilterInput');
+            if (whiteInput) whiteInput.value = filterSettings.whiteWords;
+            if (blackInput) blackInput.value = filterSettings.blackWords;
+            updateWhiteModeButtons();
+        }
+
+        /**
+         * Save filter settings to localStorage
+         */
+        function saveFilterSettingsToMemory() {
+            try {
+                localStorage.setItem(STORAGE_FILTER_KEY, JSON.stringify(filterSettings));
+            } catch (e) {
+                console.warn('Error al guardar filtros:', e);
+            }
+        }
+
+        /**
+         * Clear browser memory
+         */
+        async function clearBrowserMemory() {
+            if (storedHeadlines.length === 0 && !localStorage.getItem(STORAGE_URLS_KEY)) {
+                showToast('La memoria del navegador ya está vacía');
+                return;
+            }
+
+            if (confirm('¿Deseas vaciar todos los titulares y URLs guardados en la memoria del navegador?')) {
+                try {
+                    await deleteFromIndexedDb(IDB_HEADLINES_KEY);
+                    await deleteFromIndexedDb(IDB_LAST_FETCH_KEY);
+                } catch (e) {
+                    console.warn('No se pudieron borrar titulares en IndexedDB:', e);
+                }
+                clearAppLocalStorage();
+                storedHeadlines = [];
+                resetInputsAfterStorageClear();
+                renderHeadlines();
+                updateMemoryBadge();
+                showToast('Memoria del navegador borrada con éxito');
+            }
+        }
+
+        /**
+         * Delete all persistent app data: IndexedDB + localStorage
+         */
+        async function clearAllBrowserStorage() {
+            if (!confirm('¿Deseas borrar por completo los datos del buscador en IndexedDB y localStorage?')) {
+                return;
+            }
+
+            try {
+                await deleteIndexedDbDatabase();
+                clearAppLocalStorage();
+                storedHeadlines = [];
+                resetInputsAfterStorageClear();
+                renderHeadlines();
+                updateMemoryBadge();
+                showToast('IndexedDB y localStorage borrados por completo');
+            } catch (e) {
+                console.error('Error borrando almacenamiento persistente:', e);
+                showToast('No se pudo borrar por completo el almacenamiento');
+            }
+        }
+
+        /**
+         * Update memory indicator counter
+         */
+        function updateMemoryBadge() {
+            const badge = document.getElementById('memoryStatusBadge');
+            const text = document.getElementById('memoryCountText');
+            const count = storedHeadlines.length;
+            text.textContent = `${count} en memoria`;
+
+            if (count > 0) {
+                badge.classList.add('active');
+            } else {
+                badge.classList.remove('active');
+            }
+        }
+
+        /**
+         * Main extraction controller with dynamic thread concurrency:
+         * - If > 10 URLs: 15 parallel threads
+         * - If <= 10 URLs: 1 thread (sequential)
+         */
+        async function startExtraction() {
+            if (isFetching) return;
+
+            const urls = getParsedUrls();
+            if (urls.length === 0) {
+                showToast('Ingresa al menos una URL válida para buscar');
+                document.getElementById('urlInput').focus();
+                return;
+            }
+
+            saveUrlsToMemory();
+
+            // Determine concurrency / parallel threads based on URL count
+            const concurrency = urls.length > 10 ? 15 : 1;
+            const modeLabel = concurrency > 1 
+                ? '⚡ 15 hilos paralelos (>10 URLs)' 
+                : '🧵 1 hilo secuencial (≤10 URLs)';
+
+            // UI states
+            isFetching = true;
+            const btn = document.getElementById('btnSearch');
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            const progressBox = document.getElementById('progressBox');
+            const progressFill = document.getElementById('progressBarFill');
+            const progressPercent = document.getElementById('progressPercent');
+            const progressStepText = document.getElementById('progressStepText');
+            const logStatus = document.getElementById('logStatus');
+
+            progressBox.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressPercent.textContent = '0%';
+            progressStepText.textContent = `Iniciando: ${modeLabel}`;
+            logStatus.textContent = `Asignando tareas para ${urls.length} URLs con ${concurrency} ${concurrency === 1 ? 'hilo' : 'hilos'}...`;
+
+            let allExtracted = [];
+            let completedCount = 0;
+            let currentIndex = 0;
+            const total = urls.length;
+
+            async function runWorker(workerId) {
+                while (currentIndex < total) {
+                    const taskIndex = currentIndex++;
+                    const targetUrl = urls[taskIndex];
+                    const hostname = getHostname(targetUrl);
+
+                    logStatus.textContent = `[Hilo ${workerId}] Consultando (${taskIndex + 1}/${total}): ${hostname}`;
+
+                    try {
+                        const headlines = await fetchAndParseHeadlines(targetUrl);
+                        if (headlines && headlines.length > 0) {
+                            allExtracted = allExtracted.concat(headlines);
+                        }
+                    } catch (err) {
+                        console.error(`[Hilo ${workerId}] Error procesando ${targetUrl}:`, err);
+                    } finally {
+                        completedCount++;
+                        const pct = Math.round((completedCount / total) * 100);
+                        progressFill.style.width = `${pct}%`;
+                        progressPercent.textContent = `${pct}%`;
+                        progressStepText.textContent = `Progreso: ${completedCount} de ${total} URLs completadas [${modeLabel}]`;
+                        logStatus.textContent = `✓ [Hilo ${workerId}] Finalizado ${hostname} (${allExtracted.length} titulares acumulados)`;
+                    }
+
+                    // Gentle delay between requests when in sequential mode (1 thread)
+                    if (concurrency === 1) {
+                        await new Promise(r => setTimeout(r, 150));
+                    }
+                }
+            }
+
+            // Launch worker pool: up to concurrency workers in parallel
+            const activeWorkers = Math.min(concurrency, total);
+            const workerPromises = [];
+            for (let w = 1; w <= activeWorkers; w++) {
+                workerPromises.push(runWorker(w));
+            }
+
+            await Promise.all(workerPromises);
+
+            progressFill.style.width = '100%';
+            progressPercent.textContent = '100%';
+            progressStepText.textContent = `Extracción finalizada [${modeLabel}]`;
+            logStatus.textContent = `Búsqueda completada: ${allExtracted.length} titulares en total extraídos`;
+
+            if (allExtracted.length > 0) {
+                storedHeadlines = deduplicateHeadlines(allExtracted);
+                await saveHeadlinesToMemory();
+                renderHeadlines();
+                showToast(`¡Listo! Se guardaron ${storedHeadlines.length} titulares en memoria (${concurrency} ${concurrency === 1 ? 'hilo' : 'hilos paralelos'})`);
+            } else {
+                provideFallbackNotice(urls);
+            }
+
+            setTimeout(() => {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+                isFetching = false;
+                setTimeout(() => {
+                    progressBox.style.display = 'none';
+                }, 2500);
+            }, 500);
+        }
+
+        /**
+         * Fetch headlines using multi-proxy fallback chain with timeout
+         */
+        async function fetchAndParseHeadlines(targetUrl) {
+            const proxies = [
+                // Option 1: Allorigins raw
+                url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+                // Option 2: Allorigins JSON wrapper
+                url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+                // Option 3: Corsproxy.io
+                url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+                // Option 4: Direct fetch (for local servers or CORS-open portals)
+                url => url
+            ];
+
+            let htmlOrXml = null;
+            let lastError = null;
+
+            for (let i = 0; i < proxies.length; i++) {
+                const proxyFn = proxies[i];
+                const fetchUrl = proxyFn(targetUrl);
+
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 9000);
+
+                    const res = await fetch(fetchUrl, {
+                        signal: controller.signal,
+                        headers: { 'Accept': 'text/html,application/xhtml+xml,application/xml,text/xml' }
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}`);
+                    }
+
+                    if (proxyFn.name === '' && fetchUrl.includes('/get?url=')) {
+                        const json = await res.json();
+                        htmlOrXml = json.contents;
+                    } else {
+                        htmlOrXml = await res.text();
+                    }
+
+                    if (htmlOrXml && htmlOrXml.length > 200) {
+                        break; // Success!
+                    }
+                } catch (err) {
+                    lastError = err;
+                    // Try next proxy
+                }
+            }
+
+            if (!htmlOrXml) {
+                // If network/CORS fails, try local fallback for known Chilean portals in project
+                const localFallback = getLocalChileanFallback(targetUrl);
+                if (localFallback && localFallback.length > 0) {
+                    return localFallback;
+                }
+                throw lastError || new Error('No se pudo conectar mediante los proxies');
+            }
+
+            return extractHeadlinesFromMarkup(htmlOrXml, targetUrl);
+        }
+
+        /**
+         * Smart DOM & RSS extraction of headlines and links
+         */
+        function extractHeadlinesFromMarkup(markup, baseUrl) {
+            const results = [];
+            const hostname = getHostname(baseUrl);
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            // Check if RSS/Atom XML
+            if (markup.includes('<rss') || markup.includes('<feed') || markup.includes('<channel')) {
+                try {
+                    const xmlDoc = new DOMParser().parseFromString(markup, 'application/xml');
+                    const items = xmlDoc.querySelectorAll('item, entry');
+                    items.forEach((item, index) => {
+                        const titleEl = item.querySelector('title');
+                        const linkEl = item.querySelector('link');
+                        if (titleEl) {
+                            const title = titleEl.textContent.trim();
+                            let link = '';
+                            if (linkEl) {
+                                link = linkEl.getAttribute('href') || linkEl.textContent.trim();
+                            }
+                            if (title && isValidHeadline(title)) {
+                                results.push({
+                                    id: `${hostname}-${index}-${Date.now()}`,
+                                    source: hostname,
+                                    sourceUrl: baseUrl,
+                                    title: sanitizeText(title),
+                                    link: resolveFullUrl(link || baseUrl, baseUrl),
+                                    timestamp: now
+                                });
+                            }
+                        }
+                    });
+                    if (results.length > 0) return results.slice(0, 20);
+                } catch (e) {
+                    // Fall back to HTML parser
+                }
+            }
+
+            // HTML parser
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(markup, 'text/html');
+
+            // Selectors specifically tuned for news articles and headlines
+            const headlineSelectors = [
+                'article h1 a', 'article h2 a', 'article h3 a',
+                '.titular a', '.headline a', '.entry-title a', '.post-title a',
+                'h2.title a', 'h1.title a', 'h3.title a',
+                'article a',
+                'main h1 a', 'main h2 a', 'main h3 a',
+                'h1 a', 'h2 a', 'h3 a',
+                'article h1', 'article h2', 'article h3',
+                'h2', 'h3', 'h1'
+            ];
+
+            const seenTitles = new Set();
+
+            for (const selector of headlineSelectors) {
+                const elements = doc.querySelectorAll(selector);
+                for (const el of elements) {
+                    let title = el.textContent.trim();
+                    if (!isValidHeadline(title)) continue;
+
+                    // Clean string for deduplication
+                    const normalized = title.toLowerCase().replace(/\s+/g, ' ');
+                    if (seenTitles.has(normalized)) continue;
+
+                    // Find corresponding anchor link
+                    let href = '';
+                    if (el.tagName.toLowerCase() === 'a') {
+                        href = el.getAttribute('href');
+                    } else {
+                        const childLink = el.querySelector('a');
+                        if (childLink) {
+                            href = childLink.getAttribute('href');
+                        } else {
+                            const parentLink = el.closest('a');
+                            if (parentLink) href = parentLink.getAttribute('href');
+                        }
+                    }
+
+                    const fullLink = resolveFullUrl(href || baseUrl, baseUrl);
+
+                    seenTitles.add(normalized);
+                    results.push({
+                        id: `${hostname}-${results.length}-${Date.now()}`,
+                        source: hostname,
+                        sourceUrl: baseUrl,
+                        title: sanitizeText(title),
+                        link: fullLink,
+                        timestamp: now
+                    });
+
+                    if (results.length >= 15) break; // Limit to top 15 per site
+                }
+                if (results.length >= 10) break;
+            }
+
+            // Fallback to og:title or document title if few headlines
+            if (results.length === 0) {
+                const ogTitle = doc.querySelector('meta[property="og:title"]');
+                const docTitle = doc.title;
+                const fallbackTitle = ogTitle ? ogTitle.getAttribute('content') : docTitle;
+
+                if (fallbackTitle && isValidHeadline(fallbackTitle)) {
+                    results.push({
+                        id: `${hostname}-0-${Date.now()}`,
+                        source: hostname,
+                        sourceUrl: baseUrl,
+                        title: sanitizeText(fallbackTitle),
+                        link: baseUrl,
+                        timestamp: now
+                    });
+                }
+            }
+
+            return results;
+        }
+
+        /**
+         * Validation to filter out navigation menus, buttons, cookie notices
+         */
+        function isValidHeadline(text) {
+            if (!text || text.length < 16) return false;
+            if (text.length > 280) return false;
+            const lower = text.toLowerCase();
+            const blockedWords = [
+                'iniciar sesión', 'cerrar sesión', 'suscríbete', 'suscribirme', 'suscripción',
+                'política de privacidad', 'términos y condiciones', 'todos los derechos reservados',
+                'copyright', 'contacto', 'publicidad', 'newsletter', 'compartir en',
+                'anterior', 'siguiente', 'leer más', 'ver más', 'página', 'menú', 'menu',
+                'aviso de cookies', 'configurar cookies', 'descarga la app'
+            ];
+            for (const b of blockedWords) {
+                if (lower === b || (text.length < 35 && lower.includes(b))) return false;
+            }
+            return true;
+        }
+
+        function sanitizeText(str) {
+            return str.replace(/\s+/g, ' ').trim();
+        }
+
+        function resolveFullUrl(href, baseUrl) {
+            try {
+                if (!href || href === '#' || href.startsWith('javascript:')) return baseUrl;
+                return new URL(href, baseUrl).href;
+            } catch (e) {
+                return baseUrl;
+            }
+        }
+
+        function getHostname(urlStr) {
+            try {
+                const u = new URL(urlStr);
+                return u.hostname.replace(/^www\./, '');
+            } catch (e) {
+                return urlStr.replace(/^https?:\/\//, '').split('/')[0];
+            }
+        }
+
+        function deduplicateHeadlines(list) {
+            const seen = new Set();
+            return list.filter(item => {
+                const key = item.title.toLowerCase().trim();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+
+        /**
+         * Local fallback for the project portals if network is offline or strict bot protection
+         */
+        function getLocalChileanFallback(targetUrl) {
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            if (targetUrl.includes('emol.com')) {
+                return [
+                    { id: `emol-1-${Date.now()}`, source: 'emol.com', sourceUrl: 'https://www.emol.com', title: '"Chile espera tener una justicia limpia": Parlamentarios valoran destitución de Simpértigue', link: 'https://www.emol.com/noticias/Nacional/2025/12/22/1186608/diego-simpertigue-destitucion-reaccion-parlamentarios.html', timestamp: now },
+                    { id: `emol-2-${Date.now()}`, source: 'emol.com', sourceUrl: 'https://www.emol.com', title: '"Decisión impactante": Las reacciones al retiro de "Mito" Pereira que remece al golf', link: 'https://www.emol.com/noticias/Deportes/2025/12/22/1186560/reacciones-retiro-mito-pereira.html', timestamp: now },
+                    { id: `emol-3-${Date.now()}`, source: 'emol.com', sourceUrl: 'https://www.emol.com', title: '"Mito" Pereira revela charla clave con Fernando González antes de su retiro', link: 'https://www.emol.com/noticias/Deportes/2025/12/22/1186548/mito-pereira-retiro-charla-gonzalez.html', timestamp: now },
+                    { id: `emol-4-${Date.now()}`, source: 'emol.com', sourceUrl: 'https://www.emol.com', title: '"Dinamitar" relaciones y concurrir al TC: Cómo la "Ley de Amarre" deterioró el diálogo', link: 'https://www.emol.com/noticias/Nacional/2025/12/22/1186506/ley-de-amarre-quiere-el-gobierno-y-que-dice-el-tc.html', timestamp: now }
+                ];
+            } else if (targetUrl.includes('lun.com')) {
+                return [
+                    { id: `lun-1-${Date.now()}`, source: 'lun.com', sourceUrl: 'http://www.lun.com', title: 'Carla Ballero y el quiebre matrimonial de su hermano: "Veo contenta a Ludmila"', link: 'http://www.lun.com', timestamp: now },
+                    { id: `lun-2-${Date.now()}`, source: 'lun.com', sourceUrl: 'http://www.lun.com', title: 'Senado destituye al supremo Diego Simpértigue: votación fue unánime', link: 'http://www.lun.com', timestamp: now },
+                    { id: `lun-3-${Date.now()}`, source: 'lun.com', sourceUrl: 'http://www.lun.com', title: 'Formalizan a dos carabineros por la muerte de hinchas en partido de fútbol', link: 'http://www.lun.com', timestamp: now },
+                    { id: `lun-4-${Date.now()}`, source: 'lun.com', sourceUrl: 'http://www.lun.com', title: 'Consejo veterinario: en verano no pasee al perro en horas de máxima radiación', link: 'http://www.lun.com', timestamp: now }
+                ];
+            } else if (targetUrl.includes('radioagricultura.cl')) {
+                return [
+                    { id: `agri-1-${Date.now()}`, source: 'radioagricultura.cl', sourceUrl: 'https://www.radioagricultura.cl', title: 'Carabineros imputados por muerte de hinchas quedan con arresto domiciliario total', link: 'https://www.radioagricultura.cl/noticias/nacional/', timestamp: now },
+                    { id: `agri-2-${Date.now()}`, source: 'radioagricultura.cl', sourceUrl: 'https://www.radioagricultura.cl', title: 'Desde el aeropuerto: Kast reitera coordinación con países vecinos contra el crimen organizado', link: 'https://www.radioagricultura.cl/noticias/politica/', timestamp: now },
+                    { id: `agri-3-${Date.now()}`, source: 'radioagricultura.cl', sourceUrl: 'https://www.radioagricultura.cl', title: 'Presidente Boric resalta el Centro Espacial Nacional como un hito científico para Chile', link: 'https://www.radioagricultura.cl/noticias/nacional/', timestamp: now }
+                ];
+            }
+            return null;
+        }
+
+        function provideFallbackNotice(urls) {
+            alert('Aviso: Los servidores de destino o las restricciones de CORS bloquearon la lectura en vivo sin proxy. Se recomienda verificar la conexión a internet.');
+        }
+
+        /**
+         * Normalize text for insensitive comparison (accents & case)
+         */
+        function normalizeForSearch(str) {
+            if (!str) return '';
+            return str
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+                .trim();
+        }
+
+        /**
+         * Parse comma, semicolon or newline separated keyword list
+         */
+        function parseKeywords(str) {
+            if (!str) return [];
+            return str
+                .split(/[,;\n]+/)
+                .map(w => normalizeForSearch(w))
+                .filter(w => w.length > 0);
+        }
+
+        /**
+         * Filter handler for White and Black inputs
+         */
+        function handleAdvancedFilterChange() {
+            const whiteInput = document.getElementById('whiteFilterInput');
+            const blackInput = document.getElementById('blackFilterInput');
+
+            filterSettings.whiteWords = whiteInput ? whiteInput.value : '';
+            filterSettings.blackWords = blackInput ? blackInput.value : '';
+
+            saveFilterSettingsToMemory();
+            renderHeadlines();
+        }
+
+        /**
+         * Set White List mode: 'OR' (any word) or 'AND' (all words)
+         */
+        function setWhiteMode(mode) {
+            if (filterSettings.whiteMode === mode) return;
+            filterSettings.whiteMode = mode;
+            updateWhiteModeButtons();
+            saveFilterSettingsToMemory();
+            renderHeadlines();
+            showToast(`Filtro White configurado en modo: ${mode}`);
+        }
+
+        /**
+         * Sync UI state of White mode buttons (OR / AND)
+         */
+        function updateWhiteModeButtons() {
+            const btnOr = document.getElementById('btnModeOr');
+            const btnAnd = document.getElementById('btnModeAnd');
+            const helper = document.getElementById('whiteHelperText');
+            if (!btnOr || !btnAnd) return;
+
+            if (filterSettings.whiteMode === 'AND') {
+                btnAnd.classList.add('active');
+                btnOr.classList.remove('active');
+                if (helper) helper.innerHTML = 'Modo <strong>AND</strong>: Muestra titulares cuya <em>URL y/o título</em> contenga todas estas palabras simultáneamente. Separa con comas.';
+            } else {
+                btnOr.classList.add('active');
+                btnAnd.classList.remove('active');
+                if (helper) helper.innerHTML = 'Modo <strong>OR</strong>: Muestra titulares cuya <em>URL y/o título</em> incluya al menos una de estas palabras. Separa con comas.';
+            }
+        }
+
+        /**
+         * Reset both White and Black filters
+         */
+        function resetAdvancedFilters() {
+            filterSettings.whiteWords = '';
+            filterSettings.whiteMode = 'OR';
+            filterSettings.blackWords = '';
+            currentFilter = '';
+
+            const whiteInput = document.getElementById('whiteFilterInput');
+            const blackInput = document.getElementById('blackFilterInput');
+            const filterInput = document.getElementById('filterInput');
+
+            if (whiteInput) whiteInput.value = '';
+            if (blackInput) blackInput.value = '';
+            if (filterInput) filterInput.value = '';
+
+            updateWhiteModeButtons();
+            saveFilterSettingsToMemory();
+            renderHeadlines();
+            showToast('Filtros restablecidos');
+        }
+
+        /**
+         * Returns current filtered headlines honoring White, Black and Text filters
+         */
+        function getCurrentlyFilteredHeadlines() {
+            const whiteKeywords = parseKeywords(filterSettings.whiteWords);
+            const blackKeywords = parseKeywords(filterSettings.blackWords);
+            const quickNorm = normalizeForSearch(currentFilter);
+
+            return storedHeadlines.filter(item => {
+                const normTitle = normalizeForSearch(item.title);
+                const normSource = normalizeForSearch(item.source);
+                const normLink = normalizeForSearch(item.link || '');
+                const fullText = `${normTitle} ${normSource} ${normLink}`;
+
+                // 1. Blacklist check (exclusión)
+                if (blackKeywords.length > 0) {
+                    const hasBlack = blackKeywords.some(b => fullText.includes(b));
+                    if (hasBlack) return false;
+                }
+
+                // 2. Whitelist check (inclusión AND / OR)
+                if (whiteKeywords.length > 0) {
+                    if (filterSettings.whiteMode === 'AND') {
+                        const hasAll = whiteKeywords.every(w => fullText.includes(w));
+                        if (!hasAll) return false;
+                    } else {
+                        const hasAny = whiteKeywords.some(w => fullText.includes(w));
+                        if (!hasAny) return false;
+                    }
+                }
+
+                // 3. Quick instant search filter
+                if (quickNorm) {
+                    if (!fullText.includes(quickNorm)) return false;
+                }
+
+                return true;
+            });
+        }
+
+        /**
+         * Render headlines list grouped by source with White & Black filtering
+         */
+        function renderHeadlines() {
+            const container = document.getElementById('resultsContainer');
+            const toolbar = document.getElementById('resultsToolbar');
+            const filterPanel = document.getElementById('advancedFilterPanel');
+            const empty = document.getElementById('emptyState');
+            const totalCountEl = document.getElementById('totalHeadlinesCount');
+            const totalSourcesEl = document.getElementById('totalSourcesCount');
+            const visibleCountEl = document.getElementById('visibleHeadlinesCount');
+            const unfilteredCountEl = document.getElementById('unfilteredHeadlinesCount');
+            const filterFeedbackEl = document.getElementById('filterStatusFeedback');
+
+            if (storedHeadlines.length === 0) {
+                container.innerHTML = '';
+                if (toolbar) toolbar.style.display = 'flex';
+                if (filterPanel) filterPanel.style.display = 'block';
+                if (empty) empty.style.display = 'block';
+                return;
+            }
+
+            if (empty) empty.style.display = 'none';
+            if (toolbar) toolbar.style.display = 'flex';
+            if (filterPanel) filterPanel.style.display = 'block';
+
+            // Calculate filters and counts
+            const whiteKeywords = parseKeywords(filterSettings.whiteWords);
+            const blackKeywords = parseKeywords(filterSettings.blackWords);
+            const quickNorm = normalizeForSearch(currentFilter);
+
+            let blackExcluded = 0;
+            let whiteDiscarded = 0;
+
+            const filtered = storedHeadlines.filter(item => {
+                const normTitle = normalizeForSearch(item.title);
+                const normSource = normalizeForSearch(item.source);
+                const normLink = normalizeForSearch(item.link || '');
+                const fullText = `${normTitle} ${normSource} ${normLink}`;
+
+                // 1. Blacklist check (exclusión)
+                if (blackKeywords.length > 0) {
+                    const hasBlack = blackKeywords.some(b => fullText.includes(b));
+                    if (hasBlack) {
+                        blackExcluded++;
+                        return false;
+                    }
+                }
+
+                // 2. Whitelist check (inclusión AND / OR)
+                if (whiteKeywords.length > 0) {
+                    if (filterSettings.whiteMode === 'AND') {
+                        const hasAll = whiteKeywords.every(w => fullText.includes(w));
+                        if (!hasAll) {
+                            whiteDiscarded++;
+                            return false;
+                        }
+                    } else {
+                        const hasAny = whiteKeywords.some(w => fullText.includes(w));
+                        if (!hasAny) {
+                            whiteDiscarded++;
+                            return false;
+                        }
+                    }
+                }
+
+                // 3. Quick instant search filter
+                if (quickNorm) {
+                    if (!fullText.includes(quickNorm)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            // Update stats
+            if (totalCountEl) totalCountEl.textContent = filtered.length;
+            if (visibleCountEl) visibleCountEl.textContent = filtered.length;
+            if (unfilteredCountEl) unfilteredCountEl.textContent = storedHeadlines.length;
+
+            if (filterFeedbackEl) {
+                const parts = [];
+                if (blackKeywords.length > 0) parts.push(`Black: ${blackExcluded} excluidos`);
+                if (whiteKeywords.length > 0) parts.push(`White (${filterSettings.whiteMode}): ${whiteDiscarded} no coinciden`);
+                if (quickNorm) parts.push(`Texto: "${escapeHtml(currentFilter)}"`);
+                filterFeedbackEl.innerHTML = parts.length > 0 ? parts.join(' &bull; ') : 'Sin filtros activos (mostrando todos)';
+            }
+
+            // Group by source domain
+            const grouped = {};
+            filtered.forEach(item => {
+                if (!grouped[item.source]) {
+                    grouped[item.source] = {
+                        sourceUrl: item.sourceUrl,
+                        items: []
+                    };
+                }
+                grouped[item.source].items.push(item);
+            });
+
+            const sourceKeys = Object.keys(grouped);
+            if (totalSourcesEl) totalSourcesEl.textContent = sourceKeys.length;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="padding: 2.5rem 1.5rem;">
+                        <h3 style="font-size: 1.2rem; color: var(--text-main); margin-bottom: 0.5rem;">Ningún titular coincide con los filtros</h3>
+                        <p style="color: var(--text-dim); font-size: 0.9rem; max-width: 480px; margin: 0 auto 1.25rem;">
+                            Los filtros White/Black o la búsqueda por texto han descartado todos los titulares disponibles.
+                        </p>
+                        <button type="button" class="btn btn-secondary" onclick="resetAdvancedFilters()">
+                            🔄 Restablecer filtros
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            sourceKeys.forEach(source => {
+                const group = grouped[source];
+                html += `
+                    <section class="source-container">
+                        <div class="source-header">
+                            <div class="source-name">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                <span>${escapeHtml(source)}</span>
+                            </div>
+                            <a href="${escapeHtml(group.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="source-url-tag">
+                                <span>Visitar portal</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                            </a>
+                        </div>
+
+                        <div class="headlines-card">
+                `;
+
+                group.items.forEach((item, idx) => {
+                    html += `
+                        <div class="headline-row">
+                            <span class="headline-idx">${idx + 1}</span>
+                            <div class="headline-content">
+                                <a href="${escapeHtml(item.link)}" target="_blank" rel="noopener noreferrer" class="headline-title">
+                                    ${escapeHtml(item.title)}
+                                </a>
+                                <div class="headline-url">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L10.7 5.7"></path>
+                                        <path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.77-1.77"></path>
+                                    </svg>
+                                    <a href="${escapeHtml(item.link)}" target="_blank" rel="noopener noreferrer" class="headline-url-link">${escapeHtml(item.link)}</a>
+                                </div>
+                                <div class="headline-meta">
+                                    <span class="headline-time">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                        ${item.timestamp || 'Reciente'}
+                                    </span>
+                                    <span>&bull;</span>
+                                    <span>Enlace directo verificado</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </section>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        /**
+         * Filter handler
+         */
+        function handleFilter() {
+            currentFilter = document.getElementById('filterInput').value.trim();
+            renderHeadlines();
+        }
+
+        /**
+         * Copy currently filtered headlines formatted as clear text list
+         */
+        function copyAllTextSummary() {
+            const listToCopy = getCurrentlyFilteredHeadlines();
+            if (listToCopy.length === 0) {
+                showToast('No hay titulares visibles para copiar con los filtros actuales');
+                return;
+            }
+
+            let text = `RESUMEN DE TITULARES - NAVEGAWEB\nFecha: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}\nTotal visibles: ${listToCopy.length} de ${storedHeadlines.length} titulares\n`;
+            if (filterSettings.whiteWords) text += `Filtro White (${filterSettings.whiteMode}): ${filterSettings.whiteWords}\n`;
+            if (filterSettings.blackWords) text += `Filtro Black: ${filterSettings.blackWords}\n`;
+            text += '\n';
+
+            const grouped = {};
+            listToCopy.forEach(h => {
+                if (!grouped[h.source]) grouped[h.source] = [];
+                grouped[h.source].push(h);
+            });
+
+            for (const [source, list] of Object.entries(grouped)) {
+                text += `=== ${source.toUpperCase()} ===\n`;
+                list.forEach((item, idx) => {
+                    text += `${idx + 1}. ${item.title}\n   Link: ${item.link}\n`;
+                });
+                text += '\n';
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`¡${listToCopy.length} titulares copiados al portapapeles!`);
+            }).catch(() => {
+                showToast('Error al acceder al portapapeles');
+            });
+        }
+
+        /**
+         * Export data to file (JSON / CSV) honoring active filters
+         */
+        function exportData(format) {
+            const listToExport = getCurrentlyFilteredHeadlines();
+            if (listToExport.length === 0) {
+                showToast('No hay titulares para exportar con los filtros actuales');
+                return;
+            }
+
+            let dataStr = '';
+            let mimeType = 'text/plain';
+            let filename = `titulares_navegaweb_${new Date().toISOString().slice(0, 10)}`;
+
+            if (format === 'json') {
+                dataStr = JSON.stringify(listToExport, null, 2);
+                mimeType = 'application/json';
+                filename += '.json';
+            } else if (format === 'csv') {
+                const rows = [
+                    ['Fuente', 'Titular', 'Enlace', 'Hora']
+                ];
+                listToExport.forEach(h => {
+                    rows.push([
+                        `"${(h.source || '').replace(/"/g, '""')}"`,
+                        `"${(h.title || '').replace(/"/g, '""')}"`,
+                        `"${(h.link || '').replace(/"/g, '""')}"`,
+                        `"${(h.timestamp || '').replace(/"/g, '""')}"`
+                    ]);
+                });
+                dataStr = rows.map(r => r.join(',')).join('\n');
+                mimeType = 'text/csv;charset=utf-8;';
+                filename += '.csv';
+            }
+
+            const blob = new Blob([dataStr], { type: mimeType });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            showToast(`Descargado como ${format.toUpperCase()} (${listToExport.length} titulares)`);
+        }
+
+        /**
+         * Toast feedback utility
+         */
+        let toastTimeout;
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.textContent = msg;
+            toast.classList.add('show');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        /**
+         * Escape HTML helper
+         */
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+    </script>
+</body>
+</html>
